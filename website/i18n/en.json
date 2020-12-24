@@ -14,11 +14,11 @@
         "sidebar_label": "Tokenizer"
       },
       "arch3": {
-        "title": "High Level Architecture 3",
+        "title": "High Level Architecture",
         "sidebar_label": "Storage"
       },
       "arch4": {
-        "title": "High Level Architecture 4",
+        "title": "High Level Architecture",
         "sidebar_label": "Scoring"
       }
     },

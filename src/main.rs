@@ -5,6 +5,9 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+mod tokenizer;
+mod dtos;
+
 fn main() {
     println!("Hello, world!");
 }
