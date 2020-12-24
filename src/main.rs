@@ -7,6 +7,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 mod tokenizer;
 mod dtos;
+mod index;
 
 fn main() {
     println!("Hello, world!");
