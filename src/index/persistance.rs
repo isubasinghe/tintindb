@@ -1,6 +1,9 @@
 use rocksdb::{DB, Options, Cache, ColumnFamilyDescriptor};
 use serde::{Deserialize, Serialize};
 
+use crate::dtos;
+
+
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Size {
     GB(u64),
@@ -41,7 +44,6 @@ impl StoreConfig {
 
 pub struct DocumentStore {
     db: DB,
-
 }
 
 #[derive(Debug)]
@@ -96,5 +98,29 @@ impl DocumentStore {
         };
 
         Ok(DocumentStore{db: db})
+    }
+
+    fn insert(&self, document: dtos::request::AddDocument) {
+
+    }
+
+    fn insert_custom(&self, document: dtos::request::AddCustomDocument) {
+
+    }
+
+    fn search_simple(&self) {
+
+    }
+
+    fn search_categories(&self) {
+
+    }
+
+    fn search_boolean(&self) {
+
+    }
+
+    fn search_multi(&self) {
+        
     }
 }
