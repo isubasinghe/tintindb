@@ -1,6 +1,5 @@
-use rocksdb::{DB, Options, Cache, ColumnFamily,  ColumnFamilyDescriptor};
+use rocksdb::{DB, Options, Cache, ColumnFamilyDescriptor};
 use serde::{Deserialize, Serialize};
-use std::rc::Rc;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Size {
