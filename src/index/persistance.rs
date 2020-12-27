@@ -42,6 +42,10 @@ impl StoreConfig {
     }
 }
 
+static DOCUMENTS: &'static str = "DOCUMENTS";
+static CORPUS: &'static str = "CORPUS";
+static FREQUENCIES: &'static str = "FREQUENCIES";
+
 pub struct DocumentStore {
     db: DB,
 }
@@ -75,9 +79,9 @@ impl DocumentStore {
 
         let cf_opts = Options::default();
 
-        let document_cf = ColumnFamilyDescriptor::new("documents", cf_opts.clone());
-        let corpus_cf =  ColumnFamilyDescriptor::new("corpus", cf_opts.clone());
-        let frequencies_cf = ColumnFamilyDescriptor::new("frequencies", cf_opts.clone());
+        let document_cf = ColumnFamilyDescriptor::new(DOCUMENTS, cf_opts.clone());
+        let corpus_cf =  ColumnFamilyDescriptor::new(CORPUS, cf_opts.clone());
+        let frequencies_cf = ColumnFamilyDescriptor::new(FREQUENCIES, cf_opts.clone());
 
         let db = match DB::open_cf_descriptors(&opts, config.path.to_owned(), vec![document_cf, corpus_cf, frequencies_cf]) {
             Ok(db) => db, 
@@ -87,40 +91,22 @@ impl DocumentStore {
         };
 
         // test if handles actually exist
-        match db.cf_handle("documents") {
+        match db.cf_handle(DOCUMENTS) {
             Some(_) => {}, 
             None => return Err(IntialisationError::CFHandleFailure)
         };
 
-        match db.cf_handle("corpus") {
+        match db.cf_handle(CORPUS) {
+            Some(_) =>{}, 
+            None => return Err(IntialisationError::CFHandleFailure)
+        };
+
+        match db.cf_handle(FREQUENCIES) {
             Some(_) =>{}, 
             None => return Err(IntialisationError::CFHandleFailure)
         };
 
         Ok(DocumentStore{db: db})
     }
-
-    fn insert(&self, document: dtos::request::AddDocument) {
-
-    }
-
-    fn insert_custom(&self, document: dtos::request::AddCustomDocument) {
-
-    }
-
-    fn search_simple(&self) {
-
-    }
-
-    fn search_categories(&self) {
-
-    }
-
-    fn search_boolean(&self) {
-
-    }
-
-    fn search_multi(&self) {
-        
-    }
+    
 }
