@@ -1,8 +1,9 @@
 use rocksdb::{DB, Options, Cache, ColumnFamilyDescriptor};
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
 
 use crate::dtos;
-
+use crate::index::metadata::{Metadata};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Size {
@@ -45,9 +46,11 @@ impl StoreConfig {
 static DOCUMENTS: &'static str = "DOCUMENTS";
 static CORPUS: &'static str = "CORPUS";
 static FREQUENCIES: &'static str = "FREQUENCIES";
+static METADATA: &'static str = "METADTA";
 
 pub struct DocumentStore {
-    db: DB,
+    db: Rc<DB>,
+    metadata: Metadata,
 }
 
 #[derive(Debug)]
@@ -83,12 +86,12 @@ impl DocumentStore {
         let corpus_cf =  ColumnFamilyDescriptor::new(CORPUS, cf_opts.clone());
         let frequencies_cf = ColumnFamilyDescriptor::new(FREQUENCIES, cf_opts.clone());
 
-        let db = match DB::open_cf_descriptors(&opts, config.path.to_owned(), vec![document_cf, corpus_cf, frequencies_cf]) {
+        let db = Rc::new(match DB::open_cf_descriptors(&opts, config.path.to_owned(), vec![document_cf, corpus_cf, frequencies_cf]) {
             Ok(db) => db, 
             Err(err) => {
                 return Err(IntialisationError::DBOpenFail);
             }
-        };
+        });
 
         // test if handles actually exist
         match db.cf_handle(DOCUMENTS) {
@@ -106,7 +109,12 @@ impl DocumentStore {
             None => return Err(IntialisationError::CFHandleFailure)
         };
 
-        Ok(DocumentStore{db: db})
+        match db.cf_handle(METADATA) {
+            Some(_) =>{}, 
+            None => return Err(IntialisationError::CFHandleFailure)
+        };
+
+        Ok(DocumentStore{db: db.clone(), metadata: Metadata::new(METADATA, db.clone())})
     }
     
 }
