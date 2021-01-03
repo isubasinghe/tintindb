@@ -46,7 +46,7 @@ impl StoreConfig {
 static DOCUMENTS: &'static str = "DOCUMENTS";
 static CORPUS: &'static str = "CORPUS";
 static FREQUENCIES: &'static str = "FREQUENCIES";
-static METADATA: &'static str = "METADTA";
+static METADATA_KEY: &'static str = "METADTA_KEY";
 
 pub struct DocumentStore {
     db: Rc<DB>,
@@ -75,6 +75,7 @@ impl DocumentStore {
         opts.set_max_total_wal_size(config.get_wal_bytes());
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
+        // get parallelism value from config
         opts.increase_parallelism(4);
         opts.set_row_cache(&cache);
         opts.set_inplace_update_support(true);
@@ -85,36 +86,31 @@ impl DocumentStore {
         let document_cf = ColumnFamilyDescriptor::new(DOCUMENTS, cf_opts.clone());
         let corpus_cf =  ColumnFamilyDescriptor::new(CORPUS, cf_opts.clone());
         let frequencies_cf = ColumnFamilyDescriptor::new(FREQUENCIES, cf_opts.clone());
+        let metadata_key_cf = ColumnFamilyDescriptor::new(METADATA_KEY, cf_opts.clone());
 
-        let db = Rc::new(match DB::open_cf_descriptors(&opts, config.path.to_owned(), vec![document_cf, corpus_cf, frequencies_cf]) {
+        let cfs = vec![document_cf, corpus_cf, frequencies_cf, metadata_key_cf];
+        let db = Rc::new(match DB::open_cf_descriptors(&opts, config.path.to_owned(), cfs) {
             Ok(db) => db, 
             Err(err) => {
                 return Err(IntialisationError::DBOpenFail);
             }
         });
 
-        // test if handles actually exist
-        match db.cf_handle(DOCUMENTS) {
-            Some(_) => {}, 
-            None => return Err(IntialisationError::CFHandleFailure)
-        };
+        let test_cfs = vec![DOCUMENTS, CORPUS, FREQUENCIES, METADATA_KEY];
 
-        match db.cf_handle(CORPUS) {
-            Some(_) =>{}, 
-            None => return Err(IntialisationError::CFHandleFailure)
-        };
+        for cf in test_cfs {
+            match db.cf_handle(cf) {
+                Some(_) => {}, 
+                None => return Err(IntialisationError::CFHandleFailure)
+            };
+        }
 
-        match db.cf_handle(FREQUENCIES) {
-            Some(_) =>{}, 
-            None => return Err(IntialisationError::CFHandleFailure)
-        };
-
-        match db.cf_handle(METADATA) {
-            Some(_) =>{}, 
-            None => return Err(IntialisationError::CFHandleFailure)
-        };
-
-        Ok(DocumentStore{db: db.clone(), metadata: Metadata::new(METADATA, db.clone())})
+        Ok(DocumentStore{
+            db: db.clone(), 
+            metadata: Metadata::new(METADATA_KEY,  
+                db.clone()
+            )
+        })
     }
     
 }

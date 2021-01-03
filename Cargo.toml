@@ -27,6 +27,8 @@ hashbrown = {version = "0.9.1", features=["serde", "rayon", "inline-more"]}
 clap = "3.0.0-beta.2"
 rayon = "1.5.0"
 fnv = "1.0.7"
+bson = "1.1.0"
+bytekey2 = "0.4.3"
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemallocator = "0.3.2"
