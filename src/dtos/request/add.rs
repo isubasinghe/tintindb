@@ -6,11 +6,16 @@ pub struct Metadata {
     data: Value,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub enum Locale {
+    DefinedLocale(String),
+    GuessLocale
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AddSimpleDocument {
     pub document: String,
-    pub locale: Option<String>,
-    pub guess_locale: Option<bool>,
+    pub locale: Locale,
     pub categories: Option<Vec<String>>,
     pub metadata: Option<Metadata>
 }
@@ -24,8 +29,7 @@ pub enum TextField {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AddCustomDocument {
     pub document: Vec<TextField>,
-    pub locale: Option<String>,
-    pub guess_locale: Option<bool>,
+    pub locale: Locale,
     pub categories: Option<Vec<String>>,
     pub metadata: Option<Metadata>
 }
