@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::dtos;
 use crate::index::metadata::{Metadata};
+use crate::index::catman::{CatMan};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Size {
@@ -47,10 +48,12 @@ static DOCUMENTS: &'static str = "DOCUMENTS";
 static CORPUS: &'static str = "CORPUS";
 static FREQUENCIES: &'static str = "FREQUENCIES";
 static METADATA_KEY: &'static str = "METADTA_KEY";
+static CATEGORY_KEY: &'static str = "CATEGORY_KEY";
 
 pub struct DocumentStore {
     db: Rc<DB>,
     metadata: Metadata,
+    catman: CatMan,
 }
 
 #[derive(Debug)]
@@ -87,8 +90,8 @@ impl DocumentStore {
         let corpus_cf =  ColumnFamilyDescriptor::new(CORPUS, cf_opts.clone());
         let frequencies_cf = ColumnFamilyDescriptor::new(FREQUENCIES, cf_opts.clone());
         let metadata_key_cf = ColumnFamilyDescriptor::new(METADATA_KEY, cf_opts.clone());
-
-        let cfs = vec![document_cf, corpus_cf, frequencies_cf, metadata_key_cf];
+        let cat_key_cf = ColumnFamilyDescriptor::new(CATEGORY_KEY, cf_opts.clone());
+        let cfs = vec![document_cf, corpus_cf, frequencies_cf, metadata_key_cf, cat_key_cf];
         let db = Rc::new(match DB::open_cf_descriptors(&opts, config.path.to_owned(), cfs) {
             Ok(db) => db, 
             Err(err) => {
@@ -96,7 +99,7 @@ impl DocumentStore {
             }
         });
 
-        let test_cfs = vec![DOCUMENTS, CORPUS, FREQUENCIES, METADATA_KEY];
+        let test_cfs = vec![DOCUMENTS, CORPUS, FREQUENCIES, METADATA_KEY, CATEGORY_KEY];
 
         for cf in test_cfs {
             match db.cf_handle(cf) {
@@ -107,9 +110,8 @@ impl DocumentStore {
 
         Ok(DocumentStore{
             db: db.clone(), 
-            metadata: Metadata::new(METADATA_KEY,  
-                db.clone()
-            )
+            metadata: Metadata::new(METADATA_KEY, db.clone()),
+            catman: CatMan::new(CATEGORY_KEY, db.clone())
         })
     }
     
