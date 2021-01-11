@@ -1,14 +1,15 @@
 use rocksdb::{DB};
-use std::rc::Rc;
+use std::sync::Arc;
 
+#[derive(Debug)]
 pub struct CatMan {
-    db: Rc<DB>,
+    db: Arc<DB>,
     cf_name: &'static str,
 }
 
 
 impl CatMan {
-    pub fn new(cf_name: &'static str, db: Rc<DB>) -> CatMan {
+    pub fn new(cf_name: &'static str, db: Arc<DB>) -> CatMan {
         CatMan{db: db, cf_name: cf_name}
     }
 

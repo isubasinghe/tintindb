@@ -1,7 +1,7 @@
 use rocksdb::{DB, Options, Cache, ColumnFamilyDescriptor};
 use serde::{Deserialize, Serialize};
-use std::rc::Rc;
-
+use std::sync::Arc;
+use tracing::{Level, event, instrument};
 use crate::dtos;
 use crate::index::metadata::{Metadata};
 use crate::index::catman::{CatMan};
@@ -50,13 +50,14 @@ static FREQUENCIES: &'static str = "FREQUENCIES";
 static METADATA_KEY: &'static str = "METADTA_KEY";
 static CATEGORY_KEY: &'static str = "CATEGORY_KEY";
 
+#[derive(Debug)]
 pub struct DocumentStore {
-    db: Rc<DB>,
+    db: Arc<DB>,
     metadata: Metadata,
     catman: CatMan,
 }
 
-#[derive(Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub enum IntialisationError {
     DBOpenFail,
     CacheSetupError,
@@ -64,8 +65,10 @@ pub enum IntialisationError {
 }
 
 impl DocumentStore {
+    
+    #[instrument]
     pub fn new(config: &StoreConfig) -> Result<DocumentStore, IntialisationError>{
-
+        event!(Level::INFO, "Opening database");
         let cache = match Cache::new_lru_cache(config.get_cache_bytes() as usize) {
             Ok(cache) => cache, 
             Err(err) => {
@@ -92,7 +95,7 @@ impl DocumentStore {
         let metadata_key_cf = ColumnFamilyDescriptor::new(METADATA_KEY, cf_opts.clone());
         let cat_key_cf = ColumnFamilyDescriptor::new(CATEGORY_KEY, cf_opts.clone());
         let cfs = vec![document_cf, corpus_cf, frequencies_cf, metadata_key_cf, cat_key_cf];
-        let db = Rc::new(match DB::open_cf_descriptors(&opts, config.path.to_owned(), cfs) {
+        let db = Arc::new(match DB::open_cf_descriptors(&opts, config.path.to_owned(), cfs) {
             Ok(db) => db, 
             Err(err) => {
                 return Err(IntialisationError::DBOpenFail);
@@ -113,6 +116,14 @@ impl DocumentStore {
             metadata: Metadata::new(METADATA_KEY, db.clone()),
             catman: CatMan::new(CATEGORY_KEY, db.clone())
         })
+    }
+
+    #[instrument]
+    pub fn insert(doc: dtos::request::AddDocument) {
+        match doc {
+            dtos::request::AddDocument::AddSimpleDocument(d) => {},
+            dtos::request::AddDocument::AddCustomDocument(d) => {}
+        }
     }
     
 }

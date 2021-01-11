@@ -1,12 +1,13 @@
 use rocksdb::{DB, WriteBatch, ColumnFamily};
 use serde_json::*;
-use std::rc::Rc;
+use std::sync::Arc;
 use bytekey2::{serialize};
 use std::io::Write;
 
+#[derive(Debug)]
 pub struct Metadata {
     cf_key: &'static str,
-    db: Rc<DB>,
+    db: Arc<DB>,
 }
 
 fn breadth_first_search_json<T, E, F>(start_key: String, json: serde_json::Value, mut f: F) -> std::result::Result<(), E> 
@@ -73,7 +74,7 @@ pub enum SearchError {
 }
 
 impl Metadata {
-    pub fn new(cf_key: &'static str, db: Rc<DB>) -> Metadata {
+    pub fn new(cf_key: &'static str, db: Arc<DB>) -> Metadata {
 
         Metadata {cf_key: cf_key, db: db}
     }
