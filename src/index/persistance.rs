@@ -1,17 +1,17 @@
-use rocksdb::{DB, Options, Cache, ColumnFamilyDescriptor};
+use crate::dtos;
+use crate::index::catman::CatMan;
+use crate::index::metadata::Metadata;
+use rocksdb::{Cache, ColumnFamilyDescriptor, Options, DB};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::{Level, event, instrument};
-use crate::dtos;
-use crate::index::metadata::{Metadata};
-use crate::index::catman::{CatMan};
+use tracing::{event, instrument, Level};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Size {
     GB(u64),
     MB(u64),
     KB(u64),
-    B(u64)
+    B(u64),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -22,14 +22,13 @@ pub struct StoreConfig {
 }
 
 impl StoreConfig {
-    
     #[inline(always)]
     fn get_bytes(&self, size: &Size) -> u64 {
         match size {
             Size::GB(n) => n * 1000 * 1000 * 1000,
             Size::MB(n) => n * 1000 * 1000,
             Size::KB(n) => n * 1000,
-            Size::B(n) => n * 1
+            Size::B(n) => n * 1,
         }
     }
 
@@ -61,16 +60,15 @@ pub struct DocumentStore {
 pub enum IntialisationError {
     DBOpenFail,
     CacheSetupError,
-    CFHandleFailure, 
+    CFHandleFailure,
 }
 
 impl DocumentStore {
-    
     #[instrument]
-    pub fn new(config: &StoreConfig) -> Result<DocumentStore, IntialisationError>{
+    pub fn new(config: &StoreConfig) -> Result<DocumentStore, IntialisationError> {
         event!(Level::INFO, "Opening database");
         let cache = match Cache::new_lru_cache(config.get_cache_bytes() as usize) {
-            Ok(cache) => cache, 
+            Ok(cache) => cache,
             Err(err) => {
                 return Err(IntialisationError::CacheSetupError);
             }
@@ -90,40 +88,47 @@ impl DocumentStore {
         let cf_opts = Options::default();
 
         let document_cf = ColumnFamilyDescriptor::new(DOCUMENTS, cf_opts.clone());
-        let corpus_cf =  ColumnFamilyDescriptor::new(CORPUS, cf_opts.clone());
+        let corpus_cf = ColumnFamilyDescriptor::new(CORPUS, cf_opts.clone());
         let frequencies_cf = ColumnFamilyDescriptor::new(FREQUENCIES, cf_opts.clone());
         let metadata_key_cf = ColumnFamilyDescriptor::new(METADATA_KEY, cf_opts.clone());
         let cat_key_cf = ColumnFamilyDescriptor::new(CATEGORY_KEY, cf_opts.clone());
-        let cfs = vec![document_cf, corpus_cf, frequencies_cf, metadata_key_cf, cat_key_cf];
-        let db = Arc::new(match DB::open_cf_descriptors(&opts, config.path.to_owned(), cfs) {
-            Ok(db) => db, 
-            Err(err) => {
-                return Err(IntialisationError::DBOpenFail);
-            }
-        });
+        let cfs = vec![
+            document_cf,
+            corpus_cf,
+            frequencies_cf,
+            metadata_key_cf,
+            cat_key_cf,
+        ];
+        let db = Arc::new(
+            match DB::open_cf_descriptors(&opts, config.path.to_owned(), cfs) {
+                Ok(db) => db,
+                Err(err) => {
+                    return Err(IntialisationError::DBOpenFail);
+                }
+            },
+        );
 
         let test_cfs = vec![DOCUMENTS, CORPUS, FREQUENCIES, METADATA_KEY, CATEGORY_KEY];
 
         for cf in test_cfs {
             match db.cf_handle(cf) {
-                Some(_) => {}, 
-                None => return Err(IntialisationError::CFHandleFailure)
+                Some(_) => {}
+                None => return Err(IntialisationError::CFHandleFailure),
             };
         }
 
-        Ok(DocumentStore{
-            db: db.clone(), 
+        Ok(DocumentStore {
+            db: db.clone(),
             metadata: Metadata::new(METADATA_KEY, db.clone()),
-            catman: CatMan::new(CATEGORY_KEY, db.clone())
+            catman: CatMan::new(CATEGORY_KEY, db.clone()),
         })
     }
 
     #[instrument]
     pub fn insert(doc: dtos::request::AddDocument) {
         match doc {
-            dtos::request::AddDocument::AddSimpleDocument(d) => {},
+            dtos::request::AddDocument::AddSimpleDocument(d) => {}
             dtos::request::AddDocument::AddCustomDocument(d) => {}
         }
     }
-    
 }

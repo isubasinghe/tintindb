@@ -1,5 +1,1 @@
-
-
-fn tokenize<'a>(string: &'a str) {
-    
-}
+fn tokenize<'a>(string: &'a str) {}

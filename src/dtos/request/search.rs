@@ -2,35 +2,35 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SimpleSearch {
-    phrase: String
+    phrase: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct CategoricalSearch {  
+pub struct CategoricalSearch {
     phrase: String,
-    categories: Vec<String>
+    categories: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum BooleanQuery {
     AND(String),
     OR(String),
-    NOT(String)
+    NOT(String),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct BooleanSearch {
-    queries: Vec<BooleanQuery>
+    queries: Vec<BooleanQuery>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum SearchQuery {
     Simple(SimpleSearch),
     CategoricalSearch(CategoricalSearch),
-    BooleanSearch(BooleanSearch)
+    BooleanSearch(BooleanSearch),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MultiOptionSearch {
-    queries: Vec<SearchQuery>
+    queries: Vec<SearchQuery>,
 }

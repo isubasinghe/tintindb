@@ -1,8 +1,8 @@
-use rocksdb::{DB, WriteBatch, ColumnFamily};
+use bytekey2::serialize;
+use rocksdb::{ColumnFamily, WriteBatch, DB};
 use serde_json::*;
-use std::sync::Arc;
-use bytekey2::{serialize};
 use std::io::Write;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Metadata {
@@ -10,9 +10,13 @@ pub struct Metadata {
     db: Arc<DB>,
 }
 
-fn breadth_first_search_json<T, E, F>(start_key: String, json: serde_json::Value, mut f: F) -> std::result::Result<(), E> 
-    where
-        F: FnMut((String, &serde_json::Value)) -> std::result::Result<T, E>
+fn breadth_first_search_json<T, E, F>(
+    start_key: String,
+    json: serde_json::Value,
+    mut f: F,
+) -> std::result::Result<(), E>
+where
+    F: FnMut((String, &serde_json::Value)) -> std::result::Result<T, E>,
 {
     let mut i = 0;
     let mut nodes: Vec<(String, &serde_json::Value)> = Vec::new();
@@ -28,7 +32,6 @@ fn breadth_first_search_json<T, E, F>(start_key: String, json: serde_json::Value
 
         match nodes.get_mut(i).unwrap() {
             (key_str, Value::Array(es)) => {
-
                 let mut iter = es.iter();
                 let mut count: u64 = 0;
 
@@ -37,10 +40,10 @@ fn breadth_first_search_json<T, E, F>(start_key: String, json: serde_json::Value
                     to_push.push((key, e));
                     count += 1;
                 }
-            },
-            
+            }
+
             (key_str, Value::Object(o)) => {
-                let mut iter =o.iter();
+                let mut iter = o.iter();
                 while let Some((k, v)) = iter.next() {
                     let key = format!("{0}_{1}", key_str, k);
                     to_push.push((key, v));
@@ -48,11 +51,11 @@ fn breadth_first_search_json<T, E, F>(start_key: String, json: serde_json::Value
             }
 
             (key_str, v) => {
-                match f((key_str.to_owned(),v)) {
-                    Ok(_) => {},
-                    Err(e) => {return Err(e)}
+                match f((key_str.to_owned(), v)) {
+                    Ok(_) => {}
+                    Err(e) => return Err(e),
                 };
-            },
+            }
         };
 
         nodes.append(&mut to_push);
@@ -67,7 +70,7 @@ pub enum SearchError {
     Any,
     F64CastError,
     SerializeError,
-    UnreachableObjectReached, 
+    UnreachableObjectReached,
     UnreachableArrayReached,
     WriteError,
     CFOpenError,
@@ -75,23 +78,35 @@ pub enum SearchError {
 
 impl Metadata {
     pub fn new(cf_key: &'static str, db: Arc<DB>) -> Metadata {
-
-        Metadata {cf_key: cf_key, db: db}
+        Metadata {
+            cf_key: cf_key,
+            db: db,
+        }
     }
 
-    pub fn insert_metadata(&self, id: u64, json: serde_json::Value) -> std::result::Result<(), SearchError> {
-        
+    pub fn insert_metadata(
+        &self,
+        id: u64,
+        json: serde_json::Value,
+    ) -> std::result::Result<(), SearchError> {
         let mut wb = WriteBatch::default();
         let cf = match self.db.cf_handle(self.cf_key) {
             Some(c) => c,
-            None => return Err(SearchError::CFOpenError)
+            None => return Err(SearchError::CFOpenError),
         };
 
         match breadth_first_search_json(format!("{0}", id), json, |value| {
             match value {
                 (ref s, &Value::Bool(ref b)) => {
                     let key = format!("{0}_:t=b_{1}", *s, *b as u8);
-                    wb.put_cf(cf, key, match b { true => vec![1], false => vec![0]});
+                    wb.put_cf(
+                        cf,
+                        key,
+                        match b {
+                            true => vec![1],
+                            false => vec![0],
+                        },
+                    );
                 }
                 (ref s, &Value::Null) => {
                     let key = format!("{0}_:t=n", *s);
@@ -105,7 +120,7 @@ impl Metadata {
                     wb.put_cf(cf, key, value);
                 }
                 (ref s, &Value::String(ref s_)) => {
-                    wb.put_cf(cf, format!("{0}_:t=s",*s), s);
+                    wb.put_cf(cf, format!("{0}_:t=s", *s), s);
                 }
 
                 (ref s, &Value::Object(ref o)) => {
@@ -116,27 +131,19 @@ impl Metadata {
                 }
             };
 
-            
-
             Ok(())
         }) {
             Ok(_) => {}
-            Err(e) => {
-                return Err(e)
-            }
+            Err(e) => return Err(e),
         }
 
         match self.db.write(wb) {
-            Ok(_) => {},
-            Err(e) => return Err(SearchError::WriteError)
+            Ok(_) => {}
+            Err(e) => return Err(SearchError::WriteError),
         };
 
         Ok(())
-        
     }
 
-    fn search(&self, value: serde_json::Value) {
-        
-    }
-        
+    fn search(&self, value: serde_json::Value) {}
 }
