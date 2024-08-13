@@ -31,6 +31,7 @@ fnv = "1.0.7"
 bson = "1.1.0"
 bytekey2 = "0.4.3"
 tui = "0.14.0"
+heed = "0.20.4"
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemallocator = "0.3.2"
